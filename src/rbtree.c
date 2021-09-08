@@ -12,7 +12,7 @@ void print_tree(node_t* t){
 }
 
 rbtree *new_rbtree(void) {
-  rbtree *p = (rbtree *)calloc(sizeof(rbtree), 1);
+  rbtree *p = (rbtree *)calloc(1, sizeof(rbtree));
   return p;
 }
 
@@ -214,7 +214,8 @@ node_t *rbtree_max(const rbtree *t) {
   while(ptr->right){
       ptr = ptr->right;
   }
-  return ptr;}
+  return ptr;
+}
 
 // helper function for rbtree_erase
 void swap_node(rbtree* t, node_t* out, node_t* in){
@@ -228,6 +229,8 @@ void swap_node(rbtree* t, node_t* out, node_t* in){
         in->parent = out->parent;
 }
 
+
+int rbtree_erase(rbtree *t, node_t *p) {
 // helper function for rbtree_erase
 void delete_fixup(rbtree* t, node_t* x){
     while (x!= t->root && x->color == RBTREE_BLACK){
