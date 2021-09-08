@@ -17,9 +17,10 @@ typedef struct {
   node_t *root;
 } rbtree;
 
+void print_tree(node_t* );
+
 rbtree *new_rbtree(void);
 void delete_rbtree(rbtree *);
-
 node_t *rbtree_insert(rbtree *, const key_t);
 node_t *rbtree_find(const rbtree *, const key_t);
 node_t *rbtree_min(const rbtree *);
