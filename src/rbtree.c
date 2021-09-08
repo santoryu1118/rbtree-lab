@@ -1,10 +1,11 @@
 #include "rbtree.h"
 
 #include <stdlib.h>
-
 #include<stdio.h>
+
 void print_tree(node_t* t){
   if (t){
+    // inorder 순회
     print_tree(t->left);
     printf("%d(%d)", t->key, t->color);
     print_tree(t->right);
@@ -12,7 +13,7 @@ void print_tree(node_t* t){
 }
 
 rbtree *new_rbtree(void) {
-  rbtree *p = (rbtree *)calloc(1, sizeof(rbtree));
+  rbtree *p = (rbtree *)calloc(sizeof(rbtree), 1);
   return p;
 }
 
@@ -34,9 +35,12 @@ void delete_rbtree(rbtree *t) {
 // helper function for insertion_fixup
 void left_rotate(rbtree *t, node_t* z){
   /*
-        z              child  
-         \      ->    /
-          child      z 
+        z                                child  
+         \                            /        \
+          child            ->        z          child.R
+        /      \                      \
+      child.L   child.R                child.L
+
   해줘야 할 거 list
   1. z의 오른쪽에 child 의 왼쪽 연결
   2. child의 왼쪽의 부모를 z로 설정
@@ -90,7 +94,7 @@ void right_rotate(rbtree *t, node_t* z){
 // helper function for rbtree_insert
 void insertion_fixup(rbtree* t, node_t* z){
 
-  // 검은색이 될때까지 도는거임
+  // 부모 색이 검은색이 될때까지 도는거임 -- Double Red를 피하기 위해
   while (z!= t->root && z->parent->color == RBTREE_RED){
     node_t* parents = z->parent;
     node_t* grandparents = parents->parent;
@@ -99,7 +103,7 @@ void insertion_fixup(rbtree* t, node_t* z){
     if (parents == grandparents->left){
       node_t* uncle = grandparents->right;
 
-      //case1: uncle이 없거나 uncle이 검은색일 때
+      //case1: uncle이 없거나 uncle이 검은색일 때 restructuring
       if (!uncle || uncle->color == RBTREE_BLACK){
         // 2-1. 내가 부모의 오른쪽 자식일 때
         if(z == parents->right){
@@ -111,11 +115,13 @@ void insertion_fixup(rbtree* t, node_t* z){
         z->parent->color = RBTREE_BLACK;
         grandparents->color = RBTREE_RED;
         right_rotate(t, grandparents);
+        // right_rotate 하면 parent가 위로 올라가고 parent.R == grandparents 됨
       }
 
-      //case2: parent, uncle 둘다 빨간색일 때
+      //case2: parent, uncle 둘다 빨간색일 때  recoloring
       else if (uncle->color == RBTREE_RED){
         parents->color = uncle->color = RBTREE_BLACK;
+        // grandparents가 root면 무조건 black칠, 아니면 red칠 하고 double red를 피하기 위해 다시 while loop로
         grandparents->color = (grandparents == t->root) ? RBTREE_BLACK : RBTREE_RED ;
         z = grandparents;
       }
@@ -156,6 +162,7 @@ node_t *rbtree_insert(rbtree *t, const key_t key) {
   newnode->parent = NULL;
 
   if (t->root == NULL){
+    // root의 색은 언제나 black
     newnode->color = RBTREE_BLACK;
     t->root = newnode;
     return t->root;
@@ -180,6 +187,7 @@ node_t *rbtree_insert(rbtree *t, const key_t key) {
   else
     parent->right = newnode;
 
+  // 값 추가하고 색상 fix
   insertion_fixup(t, newnode);
 
   return t->root;
@@ -193,9 +201,11 @@ node_t *rbtree_find(const rbtree *t, const key_t key) {
       ptr = ptr->left;
     else if (ptr->key < key)
       ptr = ptr->right;
+    // key 값을 찾으면
     else
       return ptr;
   }
+  // key 값을 못 찾으면
   return NULL;
 }
 
@@ -229,8 +239,6 @@ void swap_node(rbtree* t, node_t* out, node_t* in){
         in->parent = out->parent;
 }
 
-
-int rbtree_erase(rbtree *t, node_t *p) {
 // helper function for rbtree_erase
 void delete_fixup(rbtree* t, node_t* x){
     while (x!= t->root && x->color == RBTREE_BLACK){
@@ -338,14 +346,15 @@ int rbtree_erase(rbtree *t, node_t *target) {
   }
   // 자식이 두명 있을 때
   else{
+      // 오른쪽 자식의 left left로 가서 최소값 찾기
       y = target->right;
       while(y->left){y = y->left;}
-      // 자식이 두명 있을 때는 original_color 바꾸기
+      // 자식이 두명 있을 때는 black이 올라간 걸 수도 있으니 확인 위해 original_color 바꾸기
       original_color = y->color;
       x = y->right;
       if (x!= NULL && y->parent == target)
         x->parent = target;
-      else{ // if (y->right){
+      else{ 
           // 원래 y자리에 y->right넣는거임
           swap_node(t, y, y->right);
           y->right = target->right;
